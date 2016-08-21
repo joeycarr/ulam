@@ -1,6 +1,7 @@
 # Ulam
 
-The goal of this project is to create a small command line tool that will be convenient to work with.
+Ulam is a toy generative design tool for running cellular automata and
+creating pretty outputs. The goal of this project is to create a small command line tool that will be convenient to work with.
 
 
 ```
@@ -30,6 +31,10 @@ optional arguments:
   -C code, --code code  Optionally specify a code in decimal notation,
                         otherwise a random code is generated.
 ```
+
+## Installation and Dependencies
+
+This is an *ad hoc* scripting tool, not a library. It's tested on a Mac running the Anaconda distribution of Python 3. Your mileage will vary.
 
 ## Issues
 
