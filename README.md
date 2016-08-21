@@ -4,15 +4,15 @@ Ulam is a toy generative design tool for running cellular automata and creating 
 
 ## Parameters:
 
- - *file* The output image filename, which should be a PNG. Ulam will also write a similarly YAML document containing the parameters used to generate the output.
+ - *file* - The output image filename, which should be a PNG. Ulam will also write a similarly YAML document containing the parameters used to generate the output.
 
 ## Options:
 
-  - *r*       The size of the CA neighborhood; default 1.
-  - *colors*  Specify a color set; implicitly sets the `k` parameter.
-  - *height*  The height measurement in pixels. Defaults to 512.
-  - *width*   The width measurement in pixels. Defaults to 512
-  - *code*    optionally specify a code in decimal notation, otherwise a random code is generated.
+  - *r* - The size of the CA neighborhood; default 1.
+  - *colors* - Specify a color set; implicitly sets the `k` parameter.
+  - *height* - The height measurement in pixels. Defaults to 512.
+  - *width* - The width measurement in pixels. Defaults to 512
+  - *code* - Optionally specify a code in decimal notation, otherwise a random code is generated.
 
 ## Futures
 

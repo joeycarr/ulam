@@ -1,47 +1,94 @@
 #!/usr/bin/env python
 
+import argparse
 import ca
-import math
 import numpy as np
-import os
-import random
+import yaml
 
+from matplotlib.colors import colorConverter
+from skimage import img_as_ubyte
 from skimage.io import imsave
 
-WIDTH=512
-# The porcelain palette
-# COLORS=[[230,232,233], [134, 149, 185], [93,113,175], [49,67,99]]
+def ulam(radius=1,
+         colors=[[1.,1.,1.],[0.,0.,0.]],
+         width=512,
+         height=512,
+         code=35 ):
+    # Create a lookup table of colors.
+    lut = np.array(colors)
+    k = len(colors)
+    row = np.random.randint(0, k, width)
+    rule = ca.carule(code, k, radius)
+    result = np.empty((height, width, 3), dtype=lut.dtype)
+    for y in range(height):
+        result[y,:,:] = lut[row]
+        row = rule(row)
+    return result
 
-# A subset of the tropical palette
-COLORS=[[253,254,206], [193,216,33], [21,27,22], [70,165,164]]
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='''Ulam is a toy generative design tool for running cellular automata and creating pretty outputs.''')
+    ap.add_argument('outfile',
+                    metavar='outfile',
+                    type=argparse.FileType('w'),
+                    help='A writeable image filename. PNG files work best.'
+    )
 
-def color_lookup(n):
-    return COLORS[n]
+    ap.add_argument('-r', '--radius',
+                    metavar='size',
+                    type=int,
+                    default=1,
+                    help='''The size of the automaton's neighborhood; defaults to 1.'''
+    )
 
-k = len(COLORS)
-r = 1
+    ap.add_argument('-c', '--colors',
+                    metavar='color',
+                    type=str,
+                    default=['#FFFFFF', '#000000'],
+                    nargs='+',
+                    help='''A list of colors to use in the output. You can use any string color representation recognized by Matplotlib; six digit hex strings are probably the most useful, so be aware that they must be quoted on the command line.'''
+    )
 
-starter = ca.unpack( random.getrandbits(int(math.log(k**WIDTH,2))), k )
-while len(starter) < WIDTH:
-    starter.append(0)
+    ap.add_argument('-s', '--size',
+                    metavar='pixels',
+                    type=int,
+                    default=[512, 512],
+                    nargs=2,
+                    help='''The width and height of the output. Defaults to 512 by 512 in no value is specified.'''
+    )
 
-for i in range(101):
+    ap.add_argument('-C', '--code',
+                    metavar='code',
+                    type=int,
+                    help='Optionally specify a code in decimal notation, otherwise a random code is generated.')
 
-    data = []
-    row = list(starter)
-    code = ca.getrandcode(k, r)
-    carule = ca.carule(code, k, r)
+    return ap.parse_args()    
 
-    for n in range(WIDTH):
-        row = carule(row)
-        stretched = map( color_lookup, row )
-        data.append( list(stretched) )
+def main():
+    args = parse_args()
 
-    img = np.array(data, dtype=np.uint8)
+    colors = [ list(colorConverter.to_rgb(color)) for color in args.colors ]
 
-    imsave('color_ca_2/{:03d}.png'.format(i), img)
+    radius = args.radius
+    width, height = args.size
+    if args.code:
+        code = args.code
+    else:
+        code = ca.getrandcode(len(colors), radius)
 
-    with open('color_ca_2/{:03d}.txt'.format(i), 'w') as out:
-        out.write("k: {:d}\n".format(k))
-        out.write("r: {:d}\n".format(r))
-        out.write("code: {:d}\n".format(code))
+    result = ulam(radius, colors, width, height, code)
+
+    result = img_as_ubyte(result)
+
+    imsave(args.outfile.name, result)
+    with open('{}.yaml'.format(args.outfile.name), 'w') as out:
+        out.write(yaml.dump({
+            'colors' : list(colors),
+            'radius' : radius,
+            'size' : [width, height],
+            'code' : code
+            }))
+    
+
+if __name__ == '__main__':
+    main()
