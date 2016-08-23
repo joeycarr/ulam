@@ -3,24 +3,46 @@
 import numpy as np
 import skimage
 
+def tile(img, rows=2, cols=2):
+    '''Numpy's built-in tile pads extra dimensions on the left, so it fails to treat RGB and grayscale images uniformly. This version of tile assumes only two dimensions and leaves any higher dimensions as they are.'''
+    tmp = np.concatenate((img,)*rows, axis=0)
+    return np.concatenate((tmp,)*cols, axis=1)
+
 def pinwheel(img):
-    # probably only works with RGB images because of the weird axis
-    # handling in the tile function. Should probably use concatenate
-    # or stack instead of trying to tile it initially.
-    out = np.tile(img, (2,2,1))
-    assert img.shape[0] == img.shape[1], "pinwheel() only works on square images"
-    rows = cols = img.shape[0]
-    out[0:rows,cols:] = np.rot90(img, 1)
-    out[rows:,cols:]  = np.rot90(img, 2)
-    out[rows:,0:cols] = np.rot90(img, 3)
-    return out
+    '''Impose pinwheel-like symmetry by duplicating and rotating the image by quarter turns. Only works for square input images.'''
+    assert img.shape[0] == img.shape[1], 'pinwheel() only works on square images.'
+    return np.vstack([np.hstack([img,              np.rot90(img, 1)]),
+                      np.hstack([np.rot90(img, 3), np.rot90(img, 2)])])
 
 def twofoldh(img):
-    return np.concatenate((img, np.fliplr(img)), 1)
+    '''Mirror across the y axis.'''
+    return np.concatenate((img, np.fliplr(img)), axis=1)
 
 def twofoldv(img):
-    return np.concatenate((img, np.flipud(img)), 0)
+    '''Mirror across the x axis.'''
+    return np.concatenate((img, np.flipud(img)), axis=0)
 
 def fourfold(img):
+    '''Mirror across both the x and y axes.'''
     return twofoldv(twofoldh(img))
 
+def proph(img):
+    '''Mirror across the y axis and flip the mirrored image vertically.'''
+    return np.concatenate((img, np.flipud(img)), axis=1)
+
+def propv(img):
+    '''Mirror across the x axis and flip the mirrored image horizontally.'''
+    return np.concatenate((img, np.fliplr(img)), axis=0)
+
+def glideh(A, B):
+    '''Impose horizontal glide symmetry by concatenating the images vertical while rolling the second input by 50% its height. The output will tile smoothly. Inputs must be the same size and shape.'''
+    roll = B.shape[0] // 2
+    tmp = np.roll(np.flipud(B), roll, axis=1)
+    return np.concatenate((A, tmp), axis=0)
+
+
+def glidev(A, B):
+    '''Impose vertical glide symmetry by concatenating the images horizontally while flipping and rolling the second input by 50% its width. The output will tile smoothly. Inputs must be the same size and shape.'''
+    roll = B.shape[1] // 2
+    tmp = np.roll(np.fliplr(B), roll, axis=0)
+    return np.concatenate((A, tmp), axis=1)
