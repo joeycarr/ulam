@@ -2,6 +2,7 @@
 
 import argparse
 import ca
+import starter as st
 import numpy as np
 import yaml
 
@@ -20,9 +21,9 @@ def ulam(radius=1,
     lut = np.array(colors)
     k = len(colors)
     if starter is None:
-        row = np.random.randint(0, k, width)
+        row = st.random(k, width)
     else:
-        row = np.array(starter, dtype=np.int)
+        row = np.copy(starter)
     rule = ca.carule(code, k, radius)
     result = np.empty((height, width, 3), dtype=lut.dtype)
     for y in range(height):
@@ -87,10 +88,8 @@ def main():
 
     starter = None
     if args.starter:
-        starter = imread(args.starter.name)
-        # select the first row and discard anything else.
-        starter = starter[0,:]
-        assert starter[0].max() < len(colors), 'The starter has more colors than are supplied to the --color argument.'
+        starter = st.load(args.starter.name)
+        assert starter.max() < len(colors), 'The starter has more colors than are supplied to the --color argument.'
         width = len(starter)
 
     result = ulam(radius, colors, width, height, code, starter)
