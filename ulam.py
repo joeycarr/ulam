@@ -10,11 +10,12 @@ from skimage import img_as_ubyte
 from skimage.io import imsave
 
 def ulam(radius=1,
-         colors=[[1.,1.,1.],[0.,0.,0.]],
+         colors=['#FFFFFF','#000000'],
          width=512,
          height=512,
          code=35 ):
     # Create a lookup table of colors.
+    colors = [ list(colorConverter.to_rgb(color)) for color in colors ]
     lut = np.array(colors)
     k = len(colors)
     row = np.random.randint(0, k, width)
@@ -67,8 +68,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    colors = [ list(colorConverter.to_rgb(color)) for color in args.colors ]
-
+    colors = args.colors
     radius = args.radius
     width, height = args.size
     if args.code:
