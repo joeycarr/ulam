@@ -7,18 +7,22 @@ import yaml
 
 from matplotlib.colors import colorConverter
 from skimage import img_as_ubyte
-from skimage.io import imsave
+from skimage.io import imsave, imread
 
 def ulam(radius=1,
          colors=['#FFFFFF','#000000'],
          width=512,
          height=512,
-         code=35 ):
+         code=35,
+         starter=None ):
     # Create a lookup table of colors.
     colors = [ list(colorConverter.to_rgb(color)) for color in colors ]
     lut = np.array(colors)
     k = len(colors)
-    row = np.random.randint(0, k, width)
+    if starter is None:
+        row = np.random.randint(0, k, width)
+    else:
+        row = np.array(starter, dtype=np.int)
     rule = ca.carule(code, k, radius)
     result = np.empty((height, width, 3), dtype=lut.dtype)
     for y in range(height):
@@ -55,13 +59,18 @@ def parse_args():
                     type=int,
                     default=[512, 512],
                     nargs=2,
-                    help='''The width and height of the output. Defaults to 512 by 512 in no value is specified.'''
+                    help='''The width and height of the output. Defaults to 512 by 512 in no value is specified. If a starter line is provided, then the width of that line will be used and only the height portion of this argument will matter.'''
     )
 
     ap.add_argument('-C', '--code',
                     metavar='code',
                     type=int,
                     help='Optionally specify a code in decimal notation, otherwise a random code is generated.')
+
+    ap.add_argument('-S', '--starter',
+                    metavar='filename',
+                    type=argparse.FileType('r'),
+                    help='''Optionally specify an image file that contains the line of unsigned integers fed to the cellular automaton. If no starter line is provided, then uniform random integers are used. If a starter file is specified, the width portion of the --size argument will be ignored.''')
 
     return ap.parse_args()    
 
@@ -76,7 +85,15 @@ def main():
     else:
         code = ca.getrandcode(len(colors), radius)
 
-    result = ulam(radius, colors, width, height, code)
+    starter = None
+    if args.starter:
+        starter = imread(args.starter.name)
+        # select the first row and discard anything else.
+        starter = starter[0,:]
+        assert starter[0].max() < len(colors), 'The starter has more colors than are supplied to the --color argument.'
+        width = len(starter)
+
+    result = ulam(radius, colors, width, height, code, starter)
 
     result = img_as_ubyte(result)
 
