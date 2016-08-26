@@ -14,7 +14,7 @@ def ulam(radius=1,
          colors=['#FFFFFF','#000000'],
          width=512,
          height=512,
-         code=35,
+         code=30,
          starter=None ):
     # Create a lookup table of colors.
     colors = [ list(colorConverter.to_rgb(color)) for color in colors ]
@@ -24,6 +24,7 @@ def ulam(radius=1,
         row = st.random(k, width)
     else:
         row = np.copy(starter)
+        width = len(row)
     rule = ca.carule(code, k, radius)
     result = np.empty((height, width, 3), dtype=lut.dtype)
     for y in range(height):

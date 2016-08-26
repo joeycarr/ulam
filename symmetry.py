@@ -8,6 +8,13 @@ def tile(img, rows=2, cols=2):
     tmp = np.concatenate((img,)*rows, axis=0)
     return np.concatenate((tmp,)*cols, axis=1)
 
+def tilefill(img, width=512, height=512):
+    '''Tile the given image and trim it to the given dimensions.'''
+    rows = height // img.shape[0] + 1
+    cols = width // img.shape[1] + 1
+    tmp = tile(img, rows, cols)
+    return tmp[:height,:width]
+
 def pinwheel(img):
     '''Impose pinwheel-like symmetry by duplicating and rotating the image by quarter turns. Only works for square input images.'''
     assert img.shape[0] == img.shape[1], 'pinwheel() only works on square images.'
