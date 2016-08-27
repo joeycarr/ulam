@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 import argparse
-import ca
 import starter as st
 import numpy as np
 import yaml
 
+from ca import CellularAutomaton, getrandcode
 from matplotlib.colors import colorConverter
 from skimage import img_as_ubyte
 from skimage.io import imsave, imread
@@ -21,15 +21,16 @@ def ulam(radius=1,
     lut = np.array(colors)
     k = len(colors)
     if starter is None:
-        row = st.random(k, width)
+        starter = st.random(k, width)
     else:
-        row = np.copy(starter)
         width = len(row)
-    rule = ca.carule(code, k, radius)
-    result = np.empty((height, width, 3), dtype=lut.dtype)
-    for y in range(height):
-        result[y,:,:] = lut[row]
-        row = rule(row)
+
+    img = np.empty((height, width), dtype=np.int)
+    img[0] = starter
+
+    automaton = CellularAutomaton(code, k, radius)
+    automaton.apply(img)
+    result = lut[img]
     return result
 
 def parse_args():
@@ -85,7 +86,7 @@ def main():
     if args.code:
         code = args.code
     else:
-        code = ca.getrandcode(len(colors), radius)
+        code = getrandcode(len(colors), radius)
 
     starter = None
     if args.starter:

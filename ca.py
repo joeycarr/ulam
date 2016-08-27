@@ -1,65 +1,67 @@
-'''Celular Automata.
+'''This is an imlementation of cellular automata using numpy arrays rather than lists. Since it sounds like the numba jit compiler can't optimize higher order functions, this is written in an imperative style rather than a functional style.'''
 
-The main entry to this module is the carule function. The rest of the functions are for internal use. The signature of the function produced by carule is [int] -> [int], i.e. it takes an input array of integers and produces an array of integers of equal length. The values of the input cells may range from zero to k-1.
-
-'''
-
-from math import ceil, log
+import numpy as np
 import random
 
-def carule(code, k, r):
-    '''Creates a function that runs a cellular automaton on an input list of integers.'''
-    looker = lookup(code, k, r)
-    def rule(l):
-        neighborhoods = ( neighborhood(l, n, r) for n in range(len(l)) )
-        return [ looker(pack(x, k)) for x in neighborhoods ]
-    return rule
+from itertools import product
+from math import log, ceil
+
+class CellularAutomaton:
+    def __init__(self, code, k, r):
+        '''Create a cellular automaton that implements the ruleset defined by the code for the given radix (k) and radius (r).'''
+        self.r = r
+        self.lookup = make_lookup_table(code, k, r)
+
+    def apply(self, img):
+        '''Apply the cellular automaton rules to the img parameter, which must be a 2d numpy integer array. This modifies the img array in place.'''
+        region_index = make_region_index(img.shape[1], self.r)
+        for row in range(img.shape[0]-1):
+            regions = img[row,region_index]
+            col = 0
+            for region in regions:
+                # Creating a lot of garbage tuples is probably slow
+                img[row+1, col] = self.lookup[tuple(region)]
+                col += 1
+        return img
 
 def getrandcode(k, r):
-    '''Given a depth, k, and radius, r, generate a random code number. These get very big, very quickly, with increasing values of k.'''
-    maximum = k ** (k ** (2*r + 1))
-    bits = int(ceil(log(maximum, 2)))
-    code = maximum + 1
-    while code > maximum:
-        code = random.getrandbits(bits)
-    return code
+    return random.randint(1, k**k**(2*r+1)-1)
 
-def neighborhood(l, n, r):
-    '''Returns a list of elements from the list l in the neighborhood of n. The returned list is 2r+1 elements long. The input list, l, is treated as a circular list, so the first element is the successor of the last.'''
-    ll = len(l)
-    for i in range( n-r, n+r+1 ):
-        yield l[ i%ll ]
+def make_region_index(width, r):
+    '''This is a 2d table of indexes for extracting the region of interest for each input cell. Indexing the input row with this table creates a 2d array of values which can in turn be fed into the lookup table for the code.'''
+    table = np.empty((width, 2*r+1), dtype=np.int)
+    for n in range(width):
+        # note that -2 % 10 == 8
+        table[n] = np.arange(n-r, n+r+1) % width
+    return table
 
-def lookup(code, k, r):
-    '''Produces a lookup function based on the given code number for an automaton of depth k and radius r.'''
-    lookup = unpack(code, k)
-    limit = k ** (2*r + 1)
-    def looker(i):
-        if i > limit:
-            return None
-        if i < len(lookup):
-            return lookup[i]
-        else:
-            return 0
-    return looker
-
-
-def pack(l, k):
-    '''Given a list of numbers and a base, k, pack them into a single integer as the sum of l[n]*k**n'''
+def make_lookup_table(code, k, r):
+    '''The lookup table encodes the rules for the cellular automaton. The input line in the region of the current element is used as an index into the lookup table to find the result value. This is an integer array of 2*r+1 dimensions, each k elements long.'''
+    assert code < k**k**(2*r+1), "Code invalid for given k and r."
+    table = np.zeros((k,)*(2*r+1), dtype=np.int)
+    outcomes = unpack(code, k)
     n = 0
-    s = 0
-    for a in l:
-        # a is the same as l[n]
-        s += a * k**n
+    # This counts from zero in base k for 2*r+1 digits
+    for index in product(range(k), repeat=2*r+1):
+        table[index] = outcomes[n]
         n += 1
-    return s
+        # If the code is a small number, it may not have very many
+        # digits, so we run off the end of outcomes before filling the
+        # table. The rest is implicitly zeros.
+        if n >= len(outcomes):
+            break
+    return table
 
 def unpack(n, radix):
-    '''Unpack a number into a list of coefficients of integer powers of the radix. The radix must be specified as an integer, or the results may be unpredictable.'''
-    result = []
-    if radix < 2:
-        return None # prevent an infinite recursion
+    '''This turns a number into a list of its place values, so the digits of a decimal number (radix 10) or the ones and zeros of a binary number (radix 2). The result is a list of coefficients of whole number powers of the radix counting from zero, i.e. the resulting array is in little endian order.'''
+    assert isinstance( radix, int ), "Radix must be an integer."
+    assert radix > 1, "Radix must be 2 or larger."
+    digits = ceil(log(n, radix)) + 1
+    result = np.zeros(digits, dtype=np.int)
+    i = 0
     while n > 0:
-        result.append(n % radix)
-        n = n // radix # use floor division for Python 3
+        result[i] = n % radix
+        n = n // radix
+        i += 1
     return result
+    
