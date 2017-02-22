@@ -1,4 +1,4 @@
-'''This is an imlementation of cellular automata using numpy arrays rather than lists. Since it sounds like the numba jit compiler can't optimize higher order functions, this is written in an imperative style rather than a functional style.'''
+'''This is an imlementation of cellular automata using numpy arrays rather than lists.'''
 
 import numpy as np
 import random
